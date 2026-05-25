@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Paper Audit Lab</title>
+  <link rel="stylesheet" href="./styles.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script src="https://unpkg.com/mammoth@1.8.0/mammoth.browser.min.js"></script>
+</head>
+<body>
+  <div class="page-shell">
+    <div class="ambient ambient-left"></div>
+    <div class="ambient ambient-right"></div>
+
+    <header class="hero">
+      <div class="hero-copy">
+        <p class="eyebrow">Standalone Frontend</p>
+        <h1>Paper Audit Lab</h1>
+        <p class="hero-text">
+          导入论文文件后，前端会基于文本线索评估
+          <span>可复现性</span>、
+          <span>是否开源</span>、
+          <span>开源真实性</span> 和
+          <span>结果合理性</span>。
+        </p>
+      </div>
+      <div class="hero-panel">
+        <div class="hero-nav">
+          <a class="nav-link-btn" href="./research-map.html">研究图谱</a>
+        </div>
+        <div class="signal-card">
+          <p class="signal-label">核验模式</p>
+          <p class="signal-value" id="networkStatus">离线启发式 + GitHub 在线增强</p>
+        </div>
+        <div class="signal-card">
+          <p class="signal-label">输入方式</p>
+          <p class="signal-value">导入 TXT / DOCX / PDF</p>
+        </div>
+      </div>
+    </header>
+
+    <main class="workspace">
+      <section class="panel input-panel">
+        <div class="panel-header">
+          <div>
+            <p class="panel-kicker">Input</p>
+            <h2>导入论文</h2>
+          </div>
+        </div>
+
+        <div id="dropZone" class="drop-zone" role="button" tabindex="0">
+          <div>
+            <strong>拖拽文件到这里</strong>
+            <p>或点击右侧按钮选择 TXT、DOCX、PDF</p>
+          </div>
+          <label class="file-picker">
+            <input type="file" id="fileInput" accept=".txt,.md,.doc,.docx,.pdf,text/plain,text/markdown,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document">
+            选择文件
+          </label>
+        </div>
+
+        <div class="import-meta">
+          <span id="fileMeta">尚未导入文件</span>
+          <span id="importHint">支持 TXT、DOCX、PDF；若是旧版 DOC，请先转成 DOCX。</span>
+        </div>
+
+        <textarea
+          id="paperInput"
+          placeholder="导入后正文会出现在这里，可继续手动修正。若文中包含 GitHub 链接，页面会尝试自动核验仓库是否真实存在。"
+        ></textarea>
+
+        <div class="action-row">
+          <button id="analyzeBtn" class="primary-btn">开始评估</button>
+          <button id="exampleBtn" class="ghost-btn">填入示例</button>
+          <button id="clearBtn" class="ghost-btn">清空</button>
+        </div>
+
+        <div class="meta-grid">
+          <article class="meta-card">
+            <p class="meta-title">分析重点</p>
+            <p>数据可得性、超参细节、消融、种子、基线、显著性、仓库证据。</p>
+          </article>
+          <article class="meta-card">
+            <p class="meta-title">真实性边界</p>
+            <p>离线时只能做文本一致性判断；联网时会补充 GitHub 公开仓库核验。</p>
+          </article>
+        </div>
+
+        <div class="insight-stack">
+          <article class="meta-card insight-card">
+            <p class="meta-title">论文主要内容</p>
+            <p id="paperSummary">导入并分析后，这里会给出论文做了什么、解决什么问题的简要概括。</p>
+          </article>
+
+          <article class="meta-card insight-card">
+            <p class="meta-title">创新点解读</p>
+            <p id="innovationSummary">这里会提炼方法创新、实验亮点或相对已有工作的主要变化。</p>
+          </article>
+
+          <article class="meta-card insight-card">
+            <p class="meta-title">复现流程</p>
+            <p id="reproductionGuide">如果检测到代码仓库，会给出基于源码的简要复现路线；否则给出从数据、环境到实验设置的大致引导。</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="panel output-panel">
+        <div class="panel-header">
+          <div>
+            <p class="panel-kicker">Output</p>
+            <h2>评估结果</h2>
+          </div>
+          <div class="status-pill" id="analysisState">等待输入</div>
+        </div>
+
+        <div class="summary-card">
+          <div>
+            <p class="summary-label">综合结论</p>
+            <h3 id="headlineVerdict">尚未分析</h3>
+          </div>
+          <p id="headlineExplanation" class="summary-copy">
+            输入论文文本后，这里会给出综合判断、主要证据和风险点。
+          </p>
+        </div>
+
+        <div class="legend" id="legend"></div>
+
+        <div class="score-grid" id="scoreGrid">
+          <article class="score-card placeholder-card">
+            <p>结果将显示在这里。</p>
+          </article>
+        </div>
+
+        <article class="detail-card paper-card">
+          <div class="detail-head">
+            <h3>原文标注</h3>
+            <span>点击证据可跳转</span>
+          </div>
+          <div id="paperView" class="paper-view">
+            分析后，这里会显示与证据列表对应的原文高亮。
+          </div>
+        </article>
+
+        <article class="detail-card evidence-card">
+          <div class="detail-head">
+            <h3>证据提取</h3>
+            <span id="evidenceCount">0 条</span>
+          </div>
+          <ul id="evidenceList" class="detail-list">
+            <li>等待分析。</li>
+          </ul>
+        </article>
+
+        <article class="detail-card repo-card">
+          <div class="detail-head">
+            <h3>仓库核验</h3>
+            <span id="repoStatus">未发现仓库链接</span>
+          </div>
+          <div id="repoDetails" class="repo-details">
+            论文文本里如果出现 GitHub 仓库地址，这里会显示公开性、License、最近更新时间等核验信息。
+          </div>
+        </article>
+      </section>
+    </main>
+  </div>
+
+  <script src="./app.js"></script>
+</body>
+</html>
