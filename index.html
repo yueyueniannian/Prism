@@ -1,0 +1,1400 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ContraSci - 文献反向求证助手</title>
+  <style>
+    :root {
+      --bg: #f6f7fb;
+      --ink: #182033;
+      --muted: #6a7284;
+      --line: #dfe4ed;
+      --support: #126c85;
+      --support-soft: #e5f5f7;
+      --support-line: #7ac8d6;
+      --rebut: #bd352b;
+      --rebut-soft: #fff0ed;
+      --rebut-line: #f19586;
+      --warn: #f5a524;
+      --paper: #ffffff;
+      --shadow: 0 18px 42px rgba(24, 32, 51, 0.1);
+      --radius: 8px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Inter, "Segoe UI", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at top left, rgba(18, 108, 133, 0.12), transparent 32rem),
+        linear-gradient(180deg, #fbfcff 0%, var(--bg) 42%, #eef2f7 100%);
+    }
+
+    button,
+    input {
+      font: inherit;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    .app {
+      width: min(1500px, calc(100vw - 32px));
+      margin: 0 auto;
+      padding: 22px 0 28px;
+    }
+
+    .topbar {
+      display: grid;
+      grid-template-columns: minmax(172px, 220px) 1fr minmax(118px, auto);
+      gap: 14px;
+      align-items: center;
+      padding: 12px 14px;
+      background: rgba(255, 255, 255, 0.84);
+      border: 1px solid rgba(223, 228, 237, 0.9);
+      box-shadow: 0 10px 28px rgba(24, 32, 51, 0.07);
+      backdrop-filter: blur(16px);
+      border-radius: var(--radius);
+      position: sticky;
+      top: 12px;
+      z-index: 30;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .brand-mark {
+      width: 38px;
+      height: 38px;
+      display: grid;
+      place-items: center;
+      border-radius: 8px;
+      color: #fff;
+      font-weight: 800;
+      background: linear-gradient(135deg, #126c85, #bd352b);
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.4);
+    }
+
+    .brand h1 {
+      margin: 0;
+      font-size: 1.04rem;
+      line-height: 1.05;
+      letter-spacing: 0;
+    }
+
+    .brand span {
+      color: var(--muted);
+      display: block;
+      font-size: 0.74rem;
+      margin-top: 4px;
+      white-space: nowrap;
+    }
+
+    .query-form {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .query-input {
+      width: 100%;
+      height: 46px;
+      border: 1px solid var(--line);
+      background: #fff;
+      border-radius: 8px;
+      padding: 0 14px;
+      outline: none;
+      color: var(--ink);
+      box-shadow: inset 0 1px 2px rgba(24, 32, 51, 0.04);
+    }
+
+    .query-input:focus {
+      border-color: #126c85;
+      box-shadow: 0 0 0 3px rgba(18, 108, 133, 0.14);
+    }
+
+    .primary-btn,
+    .ghost-btn,
+    .icon-btn {
+      border: 0;
+      border-radius: 8px;
+      height: 46px;
+      transition: transform 160ms ease, box-shadow 160ms ease, background 160ms ease;
+    }
+
+    .primary-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      color: #fff;
+      background: #bd352b;
+      min-width: 124px;
+      padding: 0 18px;
+      font-weight: 760;
+      box-shadow: 0 12px 24px rgba(189, 53, 43, 0.22);
+    }
+
+    .primary-btn:hover,
+    .ghost-btn:hover,
+    .icon-btn:hover {
+      transform: translateY(-1px);
+    }
+
+    .primary-btn:active,
+    .ghost-btn:active,
+    .icon-btn:active {
+      transform: translateY(0);
+    }
+
+    .primary-btn:disabled {
+      cursor: wait;
+      opacity: 0.72;
+      transform: none;
+    }
+
+    .ghost-btn {
+      color: var(--ink);
+      background: #f0f3f8;
+      border: 1px solid var(--line);
+      padding: 0 14px;
+      min-width: 112px;
+    }
+
+    .icon-btn {
+      width: 46px;
+      background: #f0f3f8;
+      border: 1px solid var(--line);
+      color: var(--ink);
+      position: relative;
+    }
+
+    .icon-btn::after {
+      content: attr(aria-label);
+      position: absolute;
+      right: 0;
+      bottom: -34px;
+      background: #182033;
+      color: #fff;
+      font-size: 0.72rem;
+      padding: 5px 8px;
+      border-radius: 6px;
+      white-space: nowrap;
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(-4px);
+      transition: opacity 140ms ease, transform 140ms ease;
+    }
+
+    .icon-btn:hover::after {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .toolbar-actions {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+
+    .sample-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 14px 2px 12px;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+
+    .sample-row::-webkit-scrollbar {
+      display: none;
+    }
+
+    .sample-btn {
+      border: 1px solid var(--line);
+      background: #fff;
+      color: #3b4355;
+      height: 34px;
+      border-radius: 999px;
+      padding: 0 12px;
+      white-space: nowrap;
+      box-shadow: 0 7px 18px rgba(24, 32, 51, 0.05);
+    }
+
+    .sample-btn:hover {
+      border-color: #126c85;
+      color: #126c85;
+    }
+
+    .status-grid {
+      display: grid;
+      grid-template-columns: minmax(260px, 1.2fr) repeat(3, minmax(160px, 0.42fr));
+      gap: 12px;
+      margin: 12px 0;
+    }
+
+    .status-panel {
+      background: rgba(255, 255, 255, 0.88);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: 0 8px 24px rgba(24, 32, 51, 0.06);
+      padding: 14px;
+      min-height: 92px;
+    }
+
+    .status-panel .label {
+      color: var(--muted);
+      font-size: 0.75rem;
+      margin-bottom: 8px;
+    }
+
+    .hypothesis-text {
+      margin: 0;
+      font-size: 1.02rem;
+      line-height: 1.45;
+      font-weight: 740;
+    }
+
+    .metric {
+      display: flex;
+      align-items: end;
+      gap: 6px;
+      margin-top: 3px;
+    }
+
+    .metric strong {
+      font-size: 1.92rem;
+      line-height: 1;
+      letter-spacing: 0;
+    }
+
+    .metric span {
+      color: var(--muted);
+      margin-bottom: 4px;
+      font-size: 0.82rem;
+    }
+
+    .meter {
+      height: 7px;
+      background: #edf0f5;
+      border-radius: 999px;
+      overflow: hidden;
+      margin-top: 12px;
+    }
+
+    .meter i {
+      display: block;
+      height: 100%;
+      width: 0;
+      border-radius: inherit;
+      background: linear-gradient(90deg, #126c85, #f5a524, #bd352b);
+      transition: width 500ms ease;
+    }
+
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 7px;
+    }
+
+    .chip {
+      border: 1px solid #d9dde7;
+      background: #f7f9fc;
+      color: #4f5769;
+      border-radius: 999px;
+      padding: 4px 8px;
+      font-size: 0.75rem;
+      line-height: 1;
+    }
+
+    .board {
+      position: relative;
+      display: grid;
+      grid-template-columns: minmax(320px, 1fr) minmax(150px, 0.24fr) minmax(320px, 1fr);
+      gap: 14px;
+      align-items: stretch;
+      margin-top: 12px;
+      min-height: 640px;
+    }
+
+    .lane {
+      position: relative;
+      z-index: 2;
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.9);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      min-width: 0;
+    }
+
+    .lane-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 16px 16px 13px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .lane-header h2 {
+      margin: 0;
+      font-size: 1rem;
+      letter-spacing: 0;
+    }
+
+    .lane-header span {
+      font-size: 0.76rem;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    .support-lane .lane-header {
+      background: linear-gradient(180deg, var(--support-soft), rgba(255, 255, 255, 0.78));
+      color: #0d5366;
+    }
+
+    .rebut-lane .lane-header {
+      background: linear-gradient(180deg, var(--rebut-soft), rgba(255, 255, 255, 0.78));
+      color: #9f2d26;
+    }
+
+    .paper-list {
+      display: grid;
+      gap: 12px;
+      padding: 14px;
+    }
+
+    .paper-card {
+      border: 1px solid #e1e6ef;
+      border-radius: var(--radius);
+      background: #fff;
+      box-shadow: 0 8px 20px rgba(24, 32, 51, 0.045);
+      overflow: hidden;
+    }
+
+    .paper-top {
+      padding: 13px 14px 10px;
+      border-bottom: 1px solid #eef1f6;
+      display: grid;
+      gap: 8px;
+    }
+
+    .paper-title {
+      margin: 0;
+      font-size: 0.98rem;
+      line-height: 1.35;
+      font-weight: 780;
+    }
+
+    .paper-meta {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 7px;
+      color: var(--muted);
+      font-size: 0.76rem;
+    }
+
+    .badge {
+      border-radius: 999px;
+      padding: 3px 8px;
+      line-height: 1;
+      border: 1px solid transparent;
+      font-weight: 700;
+      font-size: 0.72rem;
+    }
+
+    .support-badge {
+      color: #0d5366;
+      background: var(--support-soft);
+      border-color: var(--support-line);
+    }
+
+    .rebut-badge {
+      color: #9f2d26;
+      background: var(--rebut-soft);
+      border-color: var(--rebut-line);
+    }
+
+    .field-list {
+      display: grid;
+      gap: 1px;
+      background: #eef1f6;
+    }
+
+    .field {
+      display: grid;
+      grid-template-columns: 88px 1fr;
+      gap: 10px;
+      align-items: start;
+      background: #fff;
+      padding: 10px 12px;
+      min-height: 54px;
+      border-left: 3px solid transparent;
+    }
+
+    .field b {
+      font-size: 0.76rem;
+      color: var(--muted);
+      white-space: nowrap;
+      line-height: 1.35;
+    }
+
+    .field span {
+      font-size: 0.88rem;
+      line-height: 1.42;
+      color: #273044;
+    }
+
+    .field.active {
+      background: #fffaf3;
+      border-left-color: var(--warn);
+    }
+
+    .support-lane .field.active {
+      box-shadow: inset 4px 0 0 rgba(18, 108, 133, 0.18);
+    }
+
+    .rebut-lane .field.active {
+      box-shadow: inset -4px 0 0 rgba(189, 53, 43, 0.18);
+    }
+
+    .conflict-spine {
+      position: relative;
+      z-index: 3;
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.72);
+      backdrop-filter: blur(10px);
+      border-radius: var(--radius);
+      box-shadow: 0 12px 30px rgba(24, 32, 51, 0.07);
+      padding: 13px 10px;
+      min-width: 0;
+    }
+
+    .spine-title {
+      margin: 0 0 10px;
+      color: #3b4355;
+      font-size: 0.82rem;
+      font-weight: 800;
+      text-align: center;
+    }
+
+    .conflict-tabs {
+      display: grid;
+      gap: 8px;
+    }
+
+    .conflict-tab {
+      width: 100%;
+      border: 1px solid #e5dae0;
+      background: #fff;
+      color: #3b4355;
+      border-radius: 8px;
+      padding: 10px 9px;
+      text-align: left;
+      min-height: 58px;
+      box-shadow: 0 6px 16px rgba(24, 32, 51, 0.04);
+    }
+
+    .conflict-tab strong {
+      display: block;
+      font-size: 0.8rem;
+      color: #9f2d26;
+      line-height: 1.2;
+      margin-bottom: 5px;
+    }
+
+    .conflict-tab span {
+      display: block;
+      font-size: 0.72rem;
+      line-height: 1.32;
+      color: var(--muted);
+    }
+
+    .conflict-tab.active {
+      border-color: #bd352b;
+      background: #fff4f2;
+      box-shadow: 0 10px 22px rgba(189, 53, 43, 0.11);
+    }
+
+    .verdict {
+      margin-top: 12px;
+      border-top: 1px solid var(--line);
+      padding-top: 12px;
+      color: #3b4355;
+      font-size: 0.78rem;
+      line-height: 1.45;
+    }
+
+    .lines-layer {
+      position: absolute;
+      inset: 0;
+      z-index: 4;
+      pointer-events: none;
+      overflow: visible;
+    }
+
+    .lines-layer path {
+      fill: none;
+      stroke: rgba(189, 53, 43, 0.75);
+      stroke-width: 2.4;
+      stroke-linecap: round;
+      stroke-dasharray: 8 7;
+      filter: drop-shadow(0 2px 2px rgba(189, 53, 43, 0.18));
+      animation: dash 1.2s linear infinite;
+    }
+
+    .lines-layer circle {
+      fill: #fff;
+      stroke: #bd352b;
+      stroke-width: 2;
+    }
+
+    @keyframes dash {
+      to {
+        stroke-dashoffset: -15;
+      }
+    }
+
+    .line-label {
+      position: absolute;
+      z-index: 5;
+      transform: translate(-50%, -50%);
+      width: min(168px, 15vw);
+      min-width: 126px;
+      border: 1px solid #f0b1a8;
+      background: #fff7f5;
+      color: #8f2822;
+      border-radius: 8px;
+      box-shadow: 0 10px 24px rgba(189, 53, 43, 0.16);
+      padding: 8px 9px;
+      font-size: 0.74rem;
+      line-height: 1.35;
+      text-align: center;
+      pointer-events: none;
+    }
+
+    .line-label b {
+      display: block;
+      color: #bd352b;
+      margin-bottom: 3px;
+    }
+
+    .empty-state {
+      grid-column: 1 / -1;
+      border: 1px dashed #cfd6e2;
+      border-radius: var(--radius);
+      background: rgba(255, 255, 255, 0.72);
+      min-height: 460px;
+      display: grid;
+      place-items: center;
+      padding: 28px;
+      text-align: center;
+      color: var(--muted);
+    }
+
+    .empty-state strong {
+      display: block;
+      font-size: 1.12rem;
+      color: var(--ink);
+      margin-bottom: 8px;
+    }
+
+    .loader {
+      display: inline-grid;
+      grid-auto-flow: column;
+      gap: 4px;
+      align-items: center;
+    }
+
+    .loader i {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: currentColor;
+      opacity: 0.45;
+      animation: blink 900ms infinite ease-in-out;
+    }
+
+    .loader i:nth-child(2) {
+      animation-delay: 120ms;
+    }
+
+    .loader i:nth-child(3) {
+      animation-delay: 240ms;
+    }
+
+    @keyframes blink {
+      50% {
+        opacity: 1;
+        transform: translateY(-2px);
+      }
+    }
+
+    @media (max-width: 1100px) {
+      .app {
+        width: min(100vw - 24px, 980px);
+      }
+
+      .topbar {
+        grid-template-columns: 1fr;
+        position: static;
+      }
+
+      .toolbar-actions {
+        justify-content: start;
+      }
+
+      .status-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .board {
+        grid-template-columns: 1fr;
+      }
+
+      .conflict-spine {
+        order: -1;
+      }
+
+      .lines-layer,
+      .line-label {
+        display: none;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .app {
+        width: min(100vw - 16px, 560px);
+        padding-top: 10px;
+      }
+
+      .query-form {
+        grid-template-columns: 1fr;
+      }
+
+      .primary-btn {
+        width: 100%;
+      }
+
+      .status-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .lane-header {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .field {
+        grid-template-columns: 1fr;
+        gap: 4px;
+      }
+
+      .paper-list {
+        padding: 10px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <section class="topbar" aria-label="ContraSci 工作台">
+      <div class="brand">
+        <div class="brand-mark">CS</div>
+        <div>
+          <h1>ContraSci</h1>
+          <span>文献反向求证助手</span>
+        </div>
+      </div>
+
+      <form class="query-form" id="queryForm">
+        <input
+          class="query-input"
+          id="hypothesisInput"
+          name="hypothesis"
+          autocomplete="off"
+          value="间歇性断食能显著抑制肿瘤生长"
+          aria-label="科研假设"
+        >
+        <button class="primary-btn" id="verifyBtn" type="submit">
+          <span id="verifyText">反向求证</span>
+        </button>
+      </form>
+
+      <div class="toolbar-actions">
+        <button class="ghost-btn" id="randomBtn" type="button">换一组假设</button>
+        <button class="icon-btn" id="resetBtn" type="button" aria-label="重置">↺</button>
+      </div>
+    </section>
+
+    <div class="sample-row" aria-label="示例假设">
+      <button class="sample-btn" type="button">低剂量阿司匹林能有效预防 X 疾病</button>
+      <button class="sample-btn" type="button">间歇性断食能显著抑制肿瘤生长</button>
+      <button class="sample-btn" type="button">微塑料颗粒可以穿透血脑屏障</button>
+      <button class="sample-btn" type="button">肠道菌群移植能改善抑郁症状</button>
+    </div>
+
+    <section class="status-grid" aria-label="检索状态">
+      <article class="status-panel">
+        <div class="label">当前假设</div>
+        <p class="hypothesis-text" id="hypothesisText">等待输入科研假设</p>
+      </article>
+      <article class="status-panel">
+        <div class="label">反驳强度</div>
+        <div class="metric"><strong id="riskScore">--</strong><span>/ 100</span></div>
+        <div class="meter"><i id="riskMeter"></i></div>
+      </article>
+      <article class="status-panel">
+        <div class="label">检索命中</div>
+        <div class="metric"><strong id="hitCount">--</strong><span>篇</span></div>
+        <div class="chips" id="keywordChips"></div>
+      </article>
+      <article class="status-panel">
+        <div class="label">冲突维度</div>
+        <div class="metric"><strong id="conflictCount">--</strong><span>项</span></div>
+        <div class="chips" id="dimensionChips"></div>
+      </article>
+    </section>
+
+    <section class="board" id="board" aria-label="文献冲突对比">
+      <svg class="lines-layer" id="linesLayer" aria-hidden="true"></svg>
+      <div class="empty-state" id="emptyState">
+        <div>
+          <strong>输入假设后开始反向求证</strong>
+          <span>Demo 会生成逆向检索词，并用 mock 文献库抽取相互冲突的实验参数。</span>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const sampleHypotheses = [
+      "低剂量阿司匹林能有效预防 X 疾病",
+      "间歇性断食能显著抑制肿瘤生长",
+      "微塑料颗粒可以穿透血脑屏障",
+      "肠道菌群移植能改善抑郁症状"
+    ];
+
+    const literatureCases = [
+      {
+        key: ["断食", "肿瘤", "癌"],
+        support: [
+          {
+            title: "Short-cycle fasting suppresses tumor progression in murine xenografts",
+            venue: "Cell Metabolism, 2022",
+            design: "动物模型",
+            sample: "48 只免疫缺陷小鼠，皮下移植瘤模型",
+            condition: "每周 2 次 24h 断食，连续 4 周",
+            metric: "肿瘤体积、Ki-67 染色、葡萄糖摄取",
+            conclusion: "肿瘤体积下降 31%，增殖标志物降低"
+          },
+          {
+            title: "Fasting-mimicking diet sensitizes cancer cells to chemotherapy",
+            venue: "Science Translational Medicine, 2021",
+            design: "体外细胞 + 小样本临床观察",
+            sample: "3 种肿瘤细胞系，附带 22 例患者观察",
+            condition: "化疗前 72h 低热量模拟断食",
+            metric: "DNA 损伤、毒副反应评分、短期缓解率",
+            conclusion: "化疗敏感性增强，患者耐受性改善"
+          }
+        ],
+        rebut: [
+          {
+            title: "Long-term intermittent fasting shows adaptive rebound in tumor metabolism",
+            venue: "Nature Medicine, 2024",
+            design: "多中心临床队列",
+            sample: "614 例实体瘤患者，倾向评分匹配",
+            condition: "隔日限时进食，随访 6 个月",
+            metric: "无进展生存期、IGF-1、代谢反弹指数",
+            conclusion: "长期无进展生存期无显著改善，部分亚组出现代谢适应"
+          },
+          {
+            title: "Caloric restriction may compromise immunotherapy response in frail cohorts",
+            venue: "JAMA Oncology, 2023",
+            design: "随机对照试验",
+            sample: "188 例老年肺癌患者，免疫治疗联合饮食干预",
+            condition: "每日热量减少 35%，持续 12 周",
+            metric: "客观缓解率、体重下降、T 细胞活性",
+            conclusion: "虚弱患者缓解率下降，治疗中断率升高"
+          }
+        ],
+        conflicts: [
+          {
+            dimension: "样本对象",
+            supportRef: "support-0-sample",
+            rebutRef: "rebut-0-sample",
+            claim: "小鼠移植瘤 vs 人类临床队列",
+            detail: "物种与病程复杂度不同"
+          },
+          {
+            dimension: "干预周期",
+            supportRef: "support-0-condition",
+            rebutRef: "rebut-0-condition",
+            claim: "4 周短周期 vs 6 个月长期随访",
+            detail: "短期抑制可能掩盖代谢反弹"
+          },
+          {
+            dimension: "治疗场景",
+            supportRef: "support-1-condition",
+            rebutRef: "rebut-1-condition",
+            claim: "化疗增敏 vs 免疫治疗耐受",
+            detail: "联合治疗机制不一致"
+          },
+          {
+            dimension: "结论外推",
+            supportRef: "support-1-conclusion",
+            rebutRef: "rebut-1-conclusion",
+            claim: "短期耐受改善 vs 中断率升高",
+            detail: "虚弱人群可能承受额外风险"
+          }
+        ]
+      },
+      {
+        key: ["阿司匹林", "低剂量", "预防"],
+        support: [
+          {
+            title: "Low-dose aspirin reduces recurrent vascular events in high-risk adults",
+            venue: "The Lancet, 2020",
+            design: "双盲随机试验",
+            sample: "2,430 例既往心血管事件患者",
+            condition: "每日 81mg 阿司匹林，随访 24 个月",
+            metric: "复合心血管终点、血小板活性",
+            conclusion: "复发风险相对下降 18%，获益集中于高危人群"
+          },
+          {
+            title: "Aspirin chemoprevention signal in inflammation-driven colorectal cohorts",
+            venue: "Gut, 2022",
+            design: "前瞻性队列",
+            sample: "1,128 例慢性炎症相关肠病患者",
+            condition: "每周 5 次低剂量阿司匹林，3 年随访",
+            metric: "腺瘤发生率、COX-2 表达、炎症评分",
+            conclusion: "高炎症评分亚组腺瘤风险下降"
+          }
+        ],
+        rebut: [
+          {
+            title: "Primary prevention aspirin fails net-benefit threshold in older adults",
+            venue: "New England Journal of Medicine, 2021",
+            design: "大型随机对照试验",
+            sample: "19,114 例健康老年人，无明确既往病史",
+            condition: "每日 100mg 阿司匹林，随访 4.7 年",
+            metric: "全因死亡、严重出血、无病生存",
+            conclusion: "无病生存未改善，严重出血风险显著增加"
+          },
+          {
+            title: "Genotype-dependent aspirin response blunts prevention effect",
+            venue: "Circulation, 2023",
+            design: "药物基因组学亚组分析",
+            sample: "7,860 例多族裔样本，按 COX1 变异分层",
+            condition: "75-100mg 阿司匹林，随访 36 个月",
+            metric: "血小板抑制率、出血事件、主要终点",
+            conclusion: "特定基因型获益消失，出血风险仍存在"
+          }
+        ],
+        conflicts: [
+          {
+            dimension: "适用人群",
+            supportRef: "support-0-sample",
+            rebutRef: "rebut-0-sample",
+            claim: "高危复发患者 vs 健康老年人",
+            detail: "二级预防证据不能直接外推到一级预防"
+          },
+          {
+            dimension: "主要风险",
+            supportRef: "support-0-conclusion",
+            rebutRef: "rebut-0-conclusion",
+            claim: "复发下降 vs 严重出血上升",
+            detail: "净获益取决于基线风险"
+          },
+          {
+            dimension: "生物标志物",
+            supportRef: "support-1-metric",
+            rebutRef: "rebut-1-metric",
+            claim: "炎症评分 vs COX1 基因型",
+            detail: "响应差异可能来自分层变量不同"
+          },
+          {
+            dimension: "剂量与随访",
+            supportRef: "support-1-condition",
+            rebutRef: "rebut-1-condition",
+            claim: "3 年队列 vs 36 个月分层试验",
+            detail: "暴露频次和人群混杂控制不同"
+          }
+        ]
+      },
+      {
+        key: ["微塑料", "血脑屏障", "穿透"],
+        support: [
+          {
+            title: "Nanoplastic translocation across blood-brain barrier organoids",
+            venue: "Environmental Science & Technology, 2023",
+            design: "人源类器官模型",
+            sample: "12 批 BBB 类器官，荧光标记纳米塑料",
+            condition: "80nm 聚苯乙烯颗粒，暴露 48h",
+            metric: "跨膜荧光强度、紧密连接蛋白表达",
+            conclusion: "小粒径颗粒可穿越屏障并降低 ZO-1 表达"
+          },
+          {
+            title: "Plastic particles detected in zebrafish brain after dietary exposure",
+            venue: "PNAS, 2022",
+            design: "斑马鱼动物实验",
+            sample: "180 条斑马鱼，按浓度三组暴露",
+            condition: "经饲料摄入 100nm 颗粒，持续 14 天",
+            metric: "脑组织颗粒计数、炎症因子、行为轨迹",
+            conclusion: "脑组织中检出颗粒并伴随运动行为异常"
+          }
+        ],
+        rebut: [
+          {
+            title: "Physiological protein corona blocks most microplastic BBB transfer",
+            venue: "Nature Nanotechnology, 2024",
+            design: "灌流式人体 BBB 芯片",
+            sample: "36 个芯片重复，加入人血清蛋白环境",
+            condition: "0.8-5um 颗粒，动态灌流 7 天",
+            metric: "跨内皮通量、蛋白冠谱、细胞毒性",
+            conclusion: "微米级颗粒几乎不跨越屏障，蛋白冠降低转运"
+          },
+          {
+            title: "Brain microplastic signals are sensitive to contamination controls",
+            venue: "Environmental Health Perspectives, 2023",
+            design: "方法学复核",
+            sample: "42 份动物脑组织，设置空白采样和空气沉降对照",
+            condition: "拉曼光谱复测，严格无塑耗材流程",
+            metric: "假阳性率、颗粒来源追踪、谱图一致性",
+            conclusion: "早期脑组织检出信号中存在明显采样污染"
+          }
+        ],
+        conflicts: [
+          {
+            dimension: "颗粒尺寸",
+            supportRef: "support-0-condition",
+            rebutRef: "rebut-0-condition",
+            claim: "80-100nm 纳米颗粒 vs 0.8-5um 微米颗粒",
+            detail: "粒径跨越能力差异极大"
+          },
+          {
+            dimension: "模型环境",
+            supportRef: "support-0-sample",
+            rebutRef: "rebut-0-sample",
+            claim: "静态类器官 vs 动态灌流 BBB 芯片",
+            detail: "血流剪切力和蛋白冠被纳入后结论改变"
+          },
+          {
+            dimension: "检测可靠性",
+            supportRef: "support-1-metric",
+            rebutRef: "rebut-1-metric",
+            claim: "组织颗粒计数 vs 污染空白对照",
+            detail: "信号可能来自实验流程污染"
+          },
+          {
+            dimension: "结论边界",
+            supportRef: "support-1-conclusion",
+            rebutRef: "rebut-0-conclusion",
+            claim: "检出并异常 vs 几乎不跨越",
+            detail: "纳米塑料发现不能等价于全部微塑料"
+          }
+        ]
+      },
+      {
+        key: ["肠道菌群", "移植", "抑郁"],
+        support: [
+          {
+            title: "Fecal microbiota transfer improves depressive-like behavior in mice",
+            venue: "Molecular Psychiatry, 2022",
+            design: "无菌小鼠移植实验",
+            sample: "64 只无菌小鼠，接受健康供体菌群",
+            condition: "每周 2 次 FMT，持续 3 周",
+            metric: "糖水偏好、强迫游泳、海马 BDNF",
+            conclusion: "抑郁样行为改善，BDNF 表达上调"
+          },
+          {
+            title: "Adjunctive microbiome therapy shows symptom reduction in pilot MDD trial",
+            venue: "Translational Psychiatry, 2023",
+            design: "开放标签探索试验",
+            sample: "28 例中重度抑郁患者，标准药物联合 FMT",
+            condition: "两次胶囊 FMT，观察 8 周",
+            metric: "HAMD-17、菌群多样性、炎症因子",
+            conclusion: "症状评分平均下降，菌群多样性提高"
+          }
+        ],
+        rebut: [
+          {
+            title: "Placebo-controlled FMT trial finds no durable effect in depression",
+            venue: "The American Journal of Psychiatry, 2024",
+            design: "安慰剂对照随机试验",
+            sample: "156 例 MDD 患者，按药物状态分层随机",
+            condition: "标准化胶囊 FMT，随访 24 周",
+            metric: "MADRS、复发率、供体定植率",
+            conclusion: "第 24 周与安慰剂无显著差异，定植不稳定"
+          },
+          {
+            title: "Donor variability dominates microbiome intervention outcomes",
+            venue: "Microbiome, 2023",
+            design: "供体批次复核研究",
+            sample: "9 名供体，210 份受体样本纵向测序",
+            condition: "不同供体批次 FMT，饮食未严格统一",
+            metric: "供体菌株定植、饮食记录、症状波动",
+            conclusion: "供体差异解释大部分疗效波动"
+          }
+        ],
+        conflicts: [
+          {
+            dimension: "研究对象",
+            supportRef: "support-0-sample",
+            rebutRef: "rebut-0-sample",
+            claim: "无菌小鼠 vs 真实 MDD 患者",
+            detail: "动物行为模型无法覆盖临床异质性"
+          },
+          {
+            dimension: "试验盲法",
+            supportRef: "support-1-design",
+            rebutRef: "rebut-0-design",
+            claim: "开放标签 vs 安慰剂对照",
+            detail: "期望效应会放大主观量表改善"
+          },
+          {
+            dimension: "随访长度",
+            supportRef: "support-1-condition",
+            rebutRef: "rebut-0-condition",
+            claim: "8 周观察 vs 24 周随访",
+            detail: "短期改善不等于持久疗效"
+          },
+          {
+            dimension: "干预可控性",
+            supportRef: "support-1-metric",
+            rebutRef: "rebut-1-conclusion",
+            claim: "多样性提高 vs 供体差异主导",
+            detail: "菌群多样性不是稳定疗效替代终点"
+          }
+        ]
+      }
+    ];
+
+    const fieldLabels = {
+      design: "研究设计",
+      sample: "样本对象",
+      condition: "干预条件",
+      metric: "测量指标",
+      conclusion: "结论"
+    };
+
+    const state = {
+      result: null,
+      activeConflict: 0,
+      isLoading: false
+    };
+
+    const $ = (selector) => document.querySelector(selector);
+    const board = $("#board");
+    const form = $("#queryForm");
+    const input = $("#hypothesisInput");
+    const verifyBtn = $("#verifyBtn");
+    const verifyText = $("#verifyText");
+
+    function randomInt(min, max) {
+      return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+
+    function pickCase(hypothesis) {
+      const text = hypothesis.toLowerCase();
+      return literatureCases.find((item) => item.key.some((word) => text.includes(word.toLowerCase())))
+        || literatureCases[randomInt(0, literatureCases.length - 1)];
+    }
+
+    function makeReverseKeywords(hypothesis) {
+      const compact = hypothesis.replace(/[，。；、,.!?！？]/g, " ").replace(/\s+/g, " ").trim();
+      const core = compact.length > 22 ? compact.slice(0, 22) : compact;
+      const stems = [
+        "no significant difference",
+        "adverse effect",
+        "failed replication",
+        "negative trial",
+        "heterogeneity",
+        "conflicting evidence"
+      ];
+      const shuffled = stems.sort(() => Math.random() - 0.5).slice(0, 4);
+      return shuffled.map((stem) => `${core} ${stem}`);
+    }
+
+    function mockBackendSearch(hypothesis) {
+      return new Promise((resolve) => {
+        const selected = structuredClone(pickCase(hypothesis));
+        const risk = randomInt(62, 94);
+        const hits = selected.support.length + selected.rebut.length + randomInt(8, 22);
+        const confidence = randomInt(71, 96);
+        const keywords = makeReverseKeywords(hypothesis);
+        const latency = randomInt(480, 900);
+
+        selected.support = selected.support.map((paper) => ({
+          ...paper,
+          weight: randomInt(68, 91),
+          yearBias: randomInt(0, 3)
+        }));
+        selected.rebut = selected.rebut.map((paper) => ({
+          ...paper,
+          weight: randomInt(76, 98),
+          yearBias: randomInt(0, 3)
+        }));
+
+        window.setTimeout(() => resolve({
+          hypothesis,
+          risk,
+          hits,
+          confidence,
+          keywords,
+          ...selected
+        }), latency);
+      });
+    }
+
+    function escapeHTML(value) {
+      return String(value).replace(/[&<>"']/g, (char) => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        "\"": "&quot;",
+        "'": "&#039;"
+      })[char]);
+    }
+
+    function renderPaper(paper, side, index, activeRefs) {
+      const badgeClass = side === "support" ? "support-badge" : "rebut-badge";
+      const badgeText = side === "support" ? `支持 ${paper.weight}%` : `反驳 ${paper.weight}%`;
+      const fields = ["design", "sample", "condition", "metric", "conclusion"];
+
+      return `
+        <article class="paper-card">
+          <div class="paper-top">
+            <h3 class="paper-title">${escapeHTML(paper.title)}</h3>
+            <div class="paper-meta">
+              <span class="badge ${badgeClass}">${badgeText}</span>
+              <span>${escapeHTML(paper.venue)}</span>
+            </div>
+          </div>
+          <div class="field-list">
+            ${fields.map((field) => {
+              const id = `${side}-${index}-${field}`;
+              const isActive = activeRefs.has(id);
+              return `
+                <div class="field ${isActive ? "active" : ""}" id="${id}">
+                  <b>${fieldLabels[field]}</b>
+                  <span>${escapeHTML(paper[field])}</span>
+                </div>
+              `;
+            }).join("")}
+          </div>
+        </article>
+      `;
+    }
+
+    function renderChips(container, items) {
+      container.innerHTML = items.map((item) => `<span class="chip">${escapeHTML(item)}</span>`).join("");
+    }
+
+    function updateStatus(result) {
+      $("#hypothesisText").textContent = result.hypothesis;
+      $("#riskScore").textContent = result.risk;
+      $("#riskMeter").style.width = `${result.risk}%`;
+      $("#hitCount").textContent = result.hits;
+      $("#conflictCount").textContent = result.conflicts.length;
+      renderChips($("#keywordChips"), result.keywords.slice(0, 2));
+      renderChips($("#dimensionChips"), result.conflicts.map((item) => item.dimension));
+    }
+
+    function renderBoard() {
+      if (!state.result) return;
+      const result = state.result;
+      const active = result.conflicts[state.activeConflict] || result.conflicts[0];
+      const activeRefs = new Set([active.supportRef, active.rebutRef]);
+
+      board.innerHTML = `
+        <svg class="lines-layer" id="linesLayer" aria-hidden="true"></svg>
+        <section class="lane support-lane">
+          <div class="lane-header">
+            <h2>支持观点</h2>
+            <span>${result.support.length} 篇高相关</span>
+          </div>
+          <div class="paper-list">
+            ${result.support.map((paper, index) => renderPaper(paper, "support", index, activeRefs)).join("")}
+          </div>
+        </section>
+        <aside class="conflict-spine" aria-label="冲突维度">
+          <p class="spine-title">矛盾参数</p>
+          <div class="conflict-tabs">
+            ${result.conflicts.map((conflict, index) => `
+              <button class="conflict-tab ${index === state.activeConflict ? "active" : ""}" type="button" data-conflict="${index}">
+                <strong>${escapeHTML(conflict.dimension)}</strong>
+                <span>${escapeHTML(conflict.claim)}</span>
+              </button>
+            `).join("")}
+          </div>
+          <div class="verdict">
+            <b>同行评审提示：</b>${escapeHTML(active.detail)}
+          </div>
+        </aside>
+        <section class="lane rebut-lane">
+          <div class="lane-header">
+            <h2>冲突与反驳观点</h2>
+            <span>${result.rebut.length} 篇高相关</span>
+          </div>
+          <div class="paper-list">
+            ${result.rebut.map((paper, index) => renderPaper(paper, "rebut", index, activeRefs)).join("")}
+          </div>
+        </section>
+      `;
+
+      board.querySelectorAll("[data-conflict]").forEach((button) => {
+        button.addEventListener("click", () => {
+          state.activeConflict = Number(button.dataset.conflict);
+          renderBoard();
+        });
+      });
+
+      requestAnimationFrame(drawLines);
+    }
+
+    function drawLines() {
+      const result = state.result;
+      const svg = $("#linesLayer");
+      if (!result || !svg || window.matchMedia("(max-width: 1100px)").matches) return;
+
+      const boardRect = board.getBoundingClientRect();
+      svg.setAttribute("viewBox", `0 0 ${boardRect.width} ${boardRect.height}`);
+      svg.setAttribute("width", boardRect.width);
+      svg.setAttribute("height", boardRect.height);
+      svg.innerHTML = "";
+      board.querySelectorAll(".line-label").forEach((node) => node.remove());
+
+      const active = result.conflicts[state.activeConflict] || result.conflicts[0];
+      const from = document.getElementById(active.supportRef);
+      const to = document.getElementById(active.rebutRef);
+      if (!from || !to) return;
+
+      const fromRect = from.getBoundingClientRect();
+      const toRect = to.getBoundingClientRect();
+      const x1 = fromRect.right - boardRect.left - 4;
+      const y1 = fromRect.top - boardRect.top + fromRect.height / 2;
+      const x2 = toRect.left - boardRect.left + 4;
+      const y2 = toRect.top - boardRect.top + toRect.height / 2;
+      const midX = (x1 + x2) / 2;
+      const c1 = x1 + Math.max(72, (x2 - x1) * 0.34);
+      const c2 = x2 - Math.max(72, (x2 - x1) * 0.34);
+
+      const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      path.setAttribute("d", `M ${x1} ${y1} C ${c1} ${y1}, ${c2} ${y2}, ${x2} ${y2}`);
+      svg.appendChild(path);
+
+      [ [x1, y1], [x2, y2] ].forEach(([cx, cy]) => {
+        const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+        circle.setAttribute("cx", cx);
+        circle.setAttribute("cy", cy);
+        circle.setAttribute("r", "5");
+        svg.appendChild(circle);
+      });
+
+      const label = document.createElement("div");
+      label.className = "line-label";
+      label.style.left = `${midX}px`;
+      label.style.top = `${(y1 + y2) / 2 - 28}px`;
+      label.innerHTML = `<b>${escapeHTML(active.dimension)}</b>${escapeHTML(active.claim)}`;
+      board.appendChild(label);
+    }
+
+    function setLoading(isLoading) {
+      state.isLoading = isLoading;
+      verifyBtn.disabled = isLoading;
+      verifyText.innerHTML = isLoading
+        ? `<span class="loader"><i></i><i></i><i></i></span>`
+        : "反向求证";
+    }
+
+    async function runVerification(hypothesis) {
+      const clean = hypothesis.trim();
+      if (!clean) {
+        input.focus();
+        return;
+      }
+
+      setLoading(true);
+      $("#hypothesisText").textContent = clean;
+      $("#riskScore").textContent = "--";
+      $("#hitCount").textContent = "--";
+      $("#conflictCount").textContent = "--";
+      $("#riskMeter").style.width = "0";
+      $("#keywordChips").innerHTML = "";
+      $("#dimensionChips").innerHTML = "";
+
+      try {
+        const result = await mockBackendSearch(clean);
+        state.result = result;
+        state.activeConflict = 0;
+        updateStatus(result);
+        renderBoard();
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    form.addEventListener("submit", (event) => {
+      event.preventDefault();
+      runVerification(input.value);
+    });
+
+    $("#randomBtn").addEventListener("click", () => {
+      const next = sampleHypotheses[randomInt(0, sampleHypotheses.length - 1)];
+      input.value = next;
+      runVerification(next);
+    });
+
+    $("#resetBtn").addEventListener("click", () => {
+      input.value = "";
+      state.result = null;
+      state.activeConflict = 0;
+      $("#hypothesisText").textContent = "等待输入科研假设";
+      $("#riskScore").textContent = "--";
+      $("#hitCount").textContent = "--";
+      $("#conflictCount").textContent = "--";
+      $("#riskMeter").style.width = "0";
+      $("#keywordChips").innerHTML = "";
+      $("#dimensionChips").innerHTML = "";
+      board.innerHTML = `
+        <svg class="lines-layer" id="linesLayer" aria-hidden="true"></svg>
+        <div class="empty-state" id="emptyState">
+          <div>
+            <strong>输入假设后开始反向求证</strong>
+            <span>Demo 会生成逆向检索词，并用 mock 文献库抽取相互冲突的实验参数。</span>
+          </div>
+        </div>
+      `;
+      input.focus();
+    });
+
+    document.querySelectorAll(".sample-btn").forEach((button) => {
+      button.addEventListener("click", () => {
+        input.value = button.textContent.trim();
+        runVerification(input.value);
+      });
+    });
+
+    window.addEventListener("resize", () => requestAnimationFrame(drawLines));
+
+    runVerification(input.value);
+  </script>
+</body>
+</html>
